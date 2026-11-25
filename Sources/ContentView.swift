@@ -25,13 +25,13 @@ final class BudsBLEManager: NSObject, ObservableObject, CBCentralManagerDelegate
     @Published var packetCount: Int = 0
 
     // Kalibrasyon için ayarlanabilir bayt indeksleri (Samsung 0x42 beacon varsayılanları)
-    @Published var leftByteIndex: Int = 12 {
+    @Published var leftByteIndex: Int = 34 {
         didSet { reparseLastPacket() }
     }
-    @Published var rightByteIndex: Int = 13 {
+    @Published var rightByteIndex: Int = 35 {
         didSet { reparseLastPacket() }
     }
-    @Published var caseByteIndex: Int = 14 {
+    @Published var caseByteIndex: Int = 33 {
         didSet { reparseLastPacket() }
     }
 
