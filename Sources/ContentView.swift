@@ -91,8 +91,7 @@ final class BudsBLEManager: NSObject, ObservableObject, CBCentralManagerDelegate
         }
 
         // Samsung Buds BLE Beacon (0x42 başlığı) veya cihaz adında "buds" geçen Samsung yayını
-        let isBudsBeacon = (bytes[2] == 0x42) || isBudsByName
-        guard isBudsBeacon else { return }
+        guard bytes[2] == 0x42, bytes.count >= 36 else { return }
 
         if !localName.isEmpty {
             detectedDeviceName = localName
