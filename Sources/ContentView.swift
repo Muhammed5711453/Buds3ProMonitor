@@ -1,6 +1,7 @@
 import SwiftUI
 import CoreBluetooth
 import AVFoundation
+import WidgetKit
 
 // MARK: - BLE & Samsung Protocol Manager
 
@@ -36,6 +37,7 @@ final class BudsBLEManager: NSObject, ObservableObject, CBCentralManagerDelegate
     }
 
     private var centralManager: CBCentralManager!
+    private var lastWidgetReload: Date = .distantPast
 
     override init() {
         super.init()
@@ -90,7 +92,7 @@ final class BudsBLEManager: NSObject, ObservableObject, CBCentralManagerDelegate
             return
         }
 
-        // Samsung Buds BLE Beacon (0x42 başlığı) veya cihaz adında "buds" geçen Samsung yayını
+        // Yalnızca gerçek Samsung Buds pil beacon paketlerini (0x42 ve en az 36 bayt) işle
         guard bytes[2] == 0x42, bytes.count >= 36 else { return }
 
         if !localName.isEmpty {
@@ -123,6 +125,25 @@ final class BudsBLEManager: NSObject, ObservableObject, CBCentralManagerDelegate
         if let caseInfo = decodeBatteryByte(at: caseByteIndex, in: bytes) {
             caseBattery = caseInfo.level
             isCaseCharging = caseInfo.isCharging
+        }
+
+        syncWidgetStore()
+    }
+
+    private func syncWidgetStore() {
+        let defaults = UserDefaults(suiteName: "group.com.buds3pro.monitor") ?? .standard
+        if let leftBattery { defaults.set(leftBattery, forKey: "buds_left_battery") }
+        if let rightBattery { defaults.set(rightBattery, forKey: "buds_right_battery") }
+        if let caseBattery { defaults.set(caseBattery, forKey: "buds_case_battery") }
+        defaults.set(isLeftCharging, forKey: "buds_left_charging")
+        defaults.set(isRightCharging, forKey: "buds_right_charging")
+        defaults.set(isCaseCharging, forKey: "buds_case_charging")
+        defaults.set(Date(), forKey: "buds_last_updated")
+
+        let now = Date()
+        if now.timeIntervalSince(lastWidgetReload) >= 15 {
+            lastWidgetReload = now
+            WidgetCenter.shared.reloadAllTimelines()
         }
     }
 
@@ -652,11 +673,11 @@ struct ContentView: View {
                         .font(.caption.weight(.semibold))
                         .foregroundColor(.secondary)
 
-                    Stepper("Sol İndeks: [\(bleManager.leftByteIndex)]", value: $bleManager.leftByteIndex, in: 2...30)
+                    Stepper("Sol İndeks: [\(bleManager.leftByteIndex)]", value: $bleManager.leftByteIndex, in: 2...45)
                         .font(.caption.monospacedDigit())
-                    Stepper("Sağ İndeks: [\(bleManager.rightByteIndex)]", value: $bleManager.rightByteIndex, in: 2...30)
+                    Stepper("Sağ İndeks: [\(bleManager.rightByteIndex)]", value: $bleManager.rightByteIndex, in: 2...45)
                         .font(.caption.monospacedDigit())
-                    Stepper("Kutu İndeks: [\(bleManager.caseByteIndex)]", value: $bleManager.caseByteIndex, in: 2...30)
+                    Stepper("Kutu İndeks: [\(bleManager.caseByteIndex)]", value: $bleManager.caseByteIndex, in: 2...45)
                         .font(.caption.monospacedDigit())
                 }
             }
